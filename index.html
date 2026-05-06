@@ -12,10 +12,10 @@
 // ══════════════════════════════════════════════════════════════
 // SUPABASE CONFIG — Điền URL và ANON KEY từ Supabase Dashboard
 // ══════════════════════════════════════════════════════════════
-const SUPABASE_URL  = 'YOUR_SUPABASE_URL';   // vd: https://xxxx.supabase.co
-const SUPABASE_ANON = 'YOUR_SUPABASE_ANON_KEY'; // vd: eyJhbGci...
+const SUPABASE_URL  = 'https://ypzkbgmuxvlipcgrteli._sbClient.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlwemtiZ211eHZsaXBjZ3J0ZWxpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwNjg5NjAsImV4cCI6MjA5MzY0NDk2MH0.-6cKnb0pyrntXinzjHI7WskIgjItaI7M1WYZuwIo9zQ';
 
-let supabase = null;
+let _sbClient = null;
 let USE_SUPABASE = false;
 
 async function initSupabase() {
@@ -24,10 +24,10 @@ async function initSupabase() {
   msg.textContent = 'Đang kết nối Supabase...';
 
   try {
-    if (SUPABASE_URL === 'YOUR_SUPABASE_URL') throw new Error('Chưa cấu hình');
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+    if (!SUPABASE_URL || SUPABASE_URL.includes('_sbClient.co') === false) throw new Error('Chưa cấu hình');
+    _sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
     // Test kết nối
-    const { error } = await supabase.from('users').select('id').limit(1);
+    const { error } = await _sbClient.from('users').select('id').limit(1);
     if (error && error.code !== 'PGRST116') throw error;
     USE_SUPABASE = true;
     msg.textContent = 'Đã kết nối Supabase ✓';
@@ -46,10 +46,10 @@ async function initSupabase() {
 }
 
 async function seedAdmin() {
-  const { data } = await supabase.from('users')
+  const { data } = await _sbClient.from('users')
     .select('id').eq('username','KhiemNX@fe.edu.vn').single();
   if (!data) {
-    await supabase.from('users').insert({
+    await _sbClient.from('users').insert({
       id: 'admin_khiem',
       username: 'KhiemNX@fe.edu.vn',
       password: '172072',
@@ -64,41 +64,41 @@ async function seedAdmin() {
 // ── SUPABASE CRUD HELPERS ─────────────────────────────────────
 async function sbGetAll(table) {
   if (!USE_SUPABASE) return null;
-  const { data, error } = await supabase.from(table).select('*');
+  const { data, error } = await _sbClient.from(table).select('*');
   if (error) throw error;
   return data;
 }
 async function sbGet(table, id) {
   if (!USE_SUPABASE) return null;
-  const { data, error } = await supabase.from(table).select('*').eq('id', id).single();
+  const { data, error } = await _sbClient.from(table).select('*').eq('id', id).single();
   if (error) return null;
   return data;
 }
 async function sbInsert(table, row) {
   if (!USE_SUPABASE) return null;
-  const { data, error } = await supabase.from(table).insert(row).select().single();
+  const { data, error } = await _sbClient.from(table).insert(row).select().single();
   if (error) throw error;
   return data;
 }
 async function sbUpsert(table, row) {
   if (!USE_SUPABASE) return null;
-  const { data, error } = await supabase.from(table).upsert(row).select().single();
+  const { data, error } = await _sbClient.from(table).upsert(row).select().single();
   if (error) throw error;
   return data;
 }
 async function sbUpdate(table, id, updates) {
   if (!USE_SUPABASE) return;
-  const { error } = await supabase.from(table).update(updates).eq('id', id);
+  const { error } = await _sbClient.from(table).update(updates).eq('id', id);
   if (error) throw error;
 }
 async function sbDelete(table, id) {
   if (!USE_SUPABASE) return;
-  const { error } = await supabase.from(table).delete().eq('id', id);
+  const { error } = await _sbClient.from(table).delete().eq('id', id);
   if (error) throw error;
 }
 async function sbQuery(table, col, val) {
   if (!USE_SUPABASE) return null;
-  const { data, error } = await supabase.from(table).select('*').eq(col, val);
+  const { data, error } = await _sbClient.from(table).select('*').eq(col, val);
   if (error) throw error;
   return data;
 }
@@ -1075,7 +1075,7 @@ function clearAns(q){
 }
 function updProg(){if(!takeState)return;const d=Object.keys(takeState.answers).length,t=takeState.exam.tq;document.getElementById('prog-text').textContent=d+'/'+t+' câu';document.getElementById('prog-fill').style.width=(d/t*100)+'%';}
 function updTimer(s){const m=Math.floor(s/60),sc=s%60;const d=document.getElementById('timer-display');d.textContent=String(m).padStart(2,'0')+':'+String(sc).padStart(2,'0');d.className='timer-display'+(s<60?' danger':s<300?' warn':'');}
-function doSubmitExam(auto=false){
+async function doSubmitExam(auto=false){
   if(!auto){const d=Object.keys(takeState.answers).length;if(d<takeState.exam.tq&&!confirm(`Bạn mới làm ${d}/${takeState.exam.tq} câu. Vẫn nộp?`))return;}
   if(timerIv){clearInterval(timerIv);timerIv=null;}
   const {exam,answers,t0}=takeState;
@@ -1618,9 +1618,4 @@ async function deleteUser(uid){
 
 </script>
 </body>
-</html>async function fbAdd(col, data) {
-  if (!USE_SUPABASE) return null;
-  const ref = await window.FS.addDoc(window.FS.collection(window.FS.db, col), data);
-  return ref.id;
-}
-
+</html>
