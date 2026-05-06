@@ -20,29 +20,25 @@ let USE_SUPABASE = false;
 
 async function initSupabase() {
   const overlay = document.getElementById('loading-overlay');
-  const msg     = document.getElementById('loading-msg');
+  const msg = document.getElementById('loading-msg');
   msg.textContent = 'Đang kết nối Supabase...';
-
   try {
-    if (!SUPABASE_URL || SUPABASE_URL.includes('_sbClient.co') === false) throw new Error('Chưa cấu hình');
+    if (!SUPABASE_URL || !SUPABASE_ANON) throw new Error('Chưa cấu hình');
     _sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
-    // Test kết nối
-    const { error } = await _sbClient.from('users').select('id').limit(1);
-    if (error && error.code !== 'PGRST116') throw error;
+    const tp = _sbClient.from('users').select('id').limit(1);
+    const to = new Promise((_,r) => setTimeout(()=>r(new Error('Timeout 8s')), 8000));
+    const { error } = await Promise.race([tp, to]);
+    if (error && !['PGRST116','42P01'].includes(error.code)) throw error;
     USE_SUPABASE = true;
-    msg.textContent = 'Đã kết nối Supabase ✓';
-    // Seed admin nếu chưa có
+    msg.textContent = 'Đã kết nối ✓';
+    console.log('✅ Supabase OK');
     await seedAdmin();
   } catch(e) {
     USE_SUPABASE = false;
-    console.warn('Supabase not ready, demo mode:', e.message);
+    console.warn('Supabase fallback demo:', e.message);
     document.getElementById('config-banner').classList.add('show');
   }
-
-  setTimeout(() => {
-    overlay.classList.add('hide');
-    setTimeout(() => overlay.style.display = 'none', 400);
-  }, 700);
+  setTimeout(() => { overlay.classList.add('hide'); setTimeout(() => overlay.style.display='none', 400); }, 700);
 }
 
 async function seedAdmin() {
@@ -444,7 +440,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
   <div class="loading-msg" id="loading-msg">Đang kết nối...</div>
 </div>
 <div id="config-banner">
-  ⚠️ Firebase chưa được cấu hình — đang chạy ở chế độ Demo (dữ liệu mất khi tắt tab).
+  ⚠️ Supabase chưa kết nối — đang chạy ở chế độ Demo (dữ liệu mất khi tắt tab).
   <a href="#" onclick="document.getElementById('config-banner').classList.remove('show')" style="color:#fed7aa;margin-left:12px">✕ Đóng</a>
 </div>
 <div id="toast"></div>
