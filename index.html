@@ -794,6 +794,9 @@ async function doRegister(){
     return showErr('login-error','Email đã được đăng ký');
   if(regRole==='teacher'){
     // Giáo viên → vào hàng chờ duyệt
+    if(USE_SUPABASE){
+  await sbInsert('pending_teachers',{username:un,password:pw,name:nm,email:em,role:'teacher',cls:'',submittedAt:new Date().toISOString()});
+}
     DB.pendingTeachers.push({id:'p'+DB.nextUid++,username:un,password:pw,name:nm,email:em,role:'teacher',cls:'',submittedAt:new Date().toISOString()});
     hide('login-error');
     showErr('login-error','');
