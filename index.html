@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <!-- Supabase SDK -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
 // ══════════════════════════════════════════════════════════════
 // SUPABASE CONFIG — Điền URL và ANON KEY từ Supabase Dashboard
@@ -24,18 +24,22 @@ async function initSupabase() {
   msg.textContent = 'Đang kết nối Supabase...';
   try {
     if (!SUPABASE_URL || !SUPABASE_ANON) throw new Error('Chưa cấu hình');
-    _sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
-    const tp = _sbClient.from('users').select('id').limit(1);
-    const to = new Promise((_,r) => setTimeout(()=>r(new Error('Timeout 8s')), 8000));
-    const { error } = await Promise.race([tp, to]);
+    console.log('Connecting to Supabase:', SUPABASE_URL);
+    // Dùng supabasejs global từ CDN
+    const sbLib = window.supabase || window.supabaseJs;
+    if (!sbLib || !sbLib.createClient) throw new Error('Supabase SDK chưa load');
+    _sbClient = sbLib.createClient(SUPABASE_URL, SUPABASE_ANON);
+    console.log('Client created, testing...');
+    const { data, error } = await _sbClient.from('users').select('id').limit(1);
+    console.log('Test result:', {data, error});
     if (error && !['PGRST116','42P01'].includes(error.code)) throw error;
     USE_SUPABASE = true;
     msg.textContent = 'Đã kết nối ✓';
-    console.log('✅ Supabase OK');
+    console.log('✅ Supabase connected!');
     await seedAdmin();
   } catch(e) {
     USE_SUPABASE = false;
-    console.warn('Supabase fallback demo:', e.message);
+    console.error('Supabase error:', e);
     document.getElementById('config-banner').classList.add('show');
   }
   setTimeout(() => { overlay.classList.add('hide'); setTimeout(() => overlay.style.display='none', 400); }, 700);
@@ -455,8 +459,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
     </div>
     <div id="login-error" class="error-msg hidden"></div>
     <div id="tab-login">
-      <div class="field"><label>Tên đăng nhập</label><input id="l-user" placeholder="teacher1 hoặc student1" onkeydown="if(event.key==='Enter')doLogin()"/></div>
-      <div class="field"><label>Mật khẩu</label><input id="l-pass" type="password" placeholder="••••••" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+      <div class="field"><label>Tên đăng nhập</label><input id="l-user" placeholder="Nhập tên đăng nhập" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+      <div class="field"><label>Mật khẩu</label><input id="l-pass" type="password" placeholder="Nhập mật khẩu" onkeydown="if(event.key==='Enter')doLogin()"/></div>
       <button class="btn btn-primary" onclick="doLogin()">Đăng nhập</button>
     </div>
     <div id="tab-register" class="hidden">
@@ -468,7 +472,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
       <div class="field" id="r-class-field"><label>Lớp</label><input id="r-class" placeholder="12A1"/></div>
       <button class="btn btn-primary" onclick="doRegister()">Tạo tài khoản</button>
     </div>
-    <div class="demo-hint">Demo: <strong>teacher1</strong> / <strong>student1</strong> — mật khẩu <strong>123456</strong><br><span style="color:var(--accent);font-size:.72rem">🎓 Học sinh đăng ký tự do · 👨‍🏫 Giáo viên cần duyệt</span></div>
+    
   </div>
 </div>
 
