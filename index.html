@@ -810,7 +810,7 @@ async function doRegister(){
     toast('Đăng ký thành công! 🎉','success'); enterApp();
   }
 }
-function doLogout(){if(timerIv)clearInterval(timerIv);CU=null;show('screen-login');hide('screen-app');sv('l-user','');sv('l-pass','');}
+function doLogout(){if(timerIv)clearInterval(timerIv);stopAdminAutoRefresh();CU=null;show('screen-login');hide('screen-app');sv('l-user','');sv('l-pass','');}
 function enterApp(){
   hide('screen-login'); show('screen-app');
   const isT=CU.role==='teacher';
@@ -848,7 +848,11 @@ function showPage(p){
 // ── DASHBOARD ─────────────────────────────────────────────────
 function renderDash(){
   hide('teacher-dash');hide('student-dash');hide('admin-dash');
-  if(CU.role==='admin'){show('admin-dash');renderAdminDash();}
+if(CU.role==='admin'){
+  show('admin-dash');
+  renderAdminDash();
+  startAdminAutoRefresh();
+}
   else if(CU.role==='teacher'){show('teacher-dash');renderTDash();}
   else{show('student-dash');renderSDash();}
 }
@@ -1584,6 +1588,24 @@ async function renderAdminDash(){
         <td><button onclick="deleteUser(${u.id})" style="background:transparent;border:1px solid rgba(248,113,113,.3);color:var(--red);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:.72rem;font-family:var(--font)">Xóa</button></td>
       </tr>`;
     }).join('');
+}
+  let adminRefreshTimer = null;
+
+function startAdminAutoRefresh() {
+  if (adminRefreshTimer) clearInterval(adminRefreshTimer);
+  adminRefreshTimer = setInterval(() => {
+    if (CU && CU.role === 'admin') {
+      console.log('🔄 Auto-refreshing admin dashboard...');
+      renderAdminDash();
+    }
+  }, 5000);
+}
+
+function stopAdminAutoRefresh() {
+  if (adminRefreshTimer) {
+    clearInterval(adminRefreshTimer);
+    adminRefreshTimer = null;
+  }
 }
 
 async function approveTeacher(pid){
